@@ -1,11 +1,22 @@
 <!doctype html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <title>Recent ECHL Transactions</title>
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <head>
+    <meta charset="utf-8" />
+    <title>Recent ECHL Transactions</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-        <style>
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
+    <!-- iOS / PWA -->
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <meta name="theme-color" content="#4b5563">
+
+    <link rel="manifest" href="/manifest.json">
+
+    <style>
       body {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
         padding: 16px;
@@ -48,27 +59,29 @@
         color: #b91c1c;
       }
     </style>
-    </head>
+  </head>
 
-    <body>
-        <h1>Recent ECHL Transactions</h1>
-        <div class="meta" id="meta">Loading…</div>
+  <body>
+    <h1>Recent ECHL Transactions</h1>
+    <div class="meta" id="meta">Loading…</div>
 
-        <table id="table" hidden>
-            <thead>
-                <tr>
-                    <th>Player</th>
-                    <th>Team</th>
-                    <th>Detail</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <table id="table" hidden>
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Team</th>
+          <th>Detail</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-        <div class="error" id="error"></div>
+    <div class="error" id="error"></div>
 
-        <script>
+    <a href="/">Subscribe Now</a>
+
+    <script>
       async function loadRecent() {
         try {
           const res = await fetch("/.netlify/functions/tx-latest?limit=50");
@@ -108,5 +121,5 @@
 
       loadRecent();
     </script>
-    </body>
+  </body>
 </html>

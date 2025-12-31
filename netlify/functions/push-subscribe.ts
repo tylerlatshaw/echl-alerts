@@ -1,19 +1,47 @@
 import { Redis } from "@upstash/redis";
 
+type WebPushSubscription = {
+    endpoint: string;
+    keys: {
+        p256dh: string;
+        auth: string;
+    };
+};
+
+type SubscriberRecord = {
+    subscription: WebPushSubscription;
+    preferredTeams: string[];
+    firstName: string;
+    lastName: string;
+    email: string;
+    createdAt: string;
+    isActive: boolean;
+};
+
 const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-function clean(s) {
+function clean(s: any) {
     return (s || "").toString().trim();
 }
 
-function isEmail(s) {
+function isEmail(s: any) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
-export async function handler(event) {
+function getErrorMessage(err: unknown): string {
+    if (err instanceof Error) return err.message;
+    return typeof err === "string" ? err : JSON.stringify(err);
+}
+
+function getErrorStack(err: unknown): string {
+    if (err instanceof Error && err.stack) return err.stack;
+    return "";
+}
+
+export async function handler(event: any) {
     try {
         if (event.httpMethod !== "POST") {
             return { statusCode: 405, body: "Method not allowed" };
@@ -51,6 +79,10 @@ export async function handler(event) {
         return { statusCode: 200, body: "OK" };
     } catch (e) {
         console.error("PUSH-SUBSCRIBE ERROR:", e);
-        return { statusCode: 500, body: e?.message || "Error" };
+        return {
+            statusCode: 500,
+            headers: { "content-type": "text/plain; charset=utf-8" },
+            body: `ERROR: ${getErrorMessage(e)}\n\nSTACK:\n${getErrorStack(e)}`,
+        };
     }
 }

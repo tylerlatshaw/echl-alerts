@@ -1,0 +1,8 @@
+[build]
+  publish = "public"
+
+[functions]
+  node_bundler = "esbuild"
+
+[functions."echl-cron"]
+  schedule = "*/30 * * * *"

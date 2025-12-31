@@ -1,14 +1,21 @@
 self.addEventListener("push", (event) => {
-  const data = event.data ? event.data.json() : {};
+  const data = event.data?.json() || {};
+
   event.waitUntil(
-    self.registration.showNotification(data.title || "ECHL Update", {
-      body: data.body || "Transactions updated.",
-      data: { url: data.url || "https://echl.com/transactions" },
+    self.registration.showNotification(data.title || "ECHL Alert", {
+      body: data.body,
+      icon: data.icon || "/icon-192.png",
+      badge: data.badge || "/icon-192.png",
+      data: data.data || {}
     })
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(clients.openWindow(event.notification.data?.url));
+  const url = event.notification.data?.url || "/recent";
+
+  event.waitUntil(
+    clients.openWindow(url)
+  );
 });

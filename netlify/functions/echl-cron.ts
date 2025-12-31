@@ -1,7 +1,38 @@
-import crypto from "crypto";
+import * as crypto from "crypto";
 import webpush from "web-push";
 import { Redis } from "@upstash/redis";
 import * as cheerio from "cheerio";
+
+type StatusCodeError = {
+    statusCode?: number;
+};
+
+type PushPayload = {
+    title: string;
+    body: string;
+    icon?: string;
+    badge?: string;
+    data?: {
+        url?: string;
+    };
+};
+
+type WebPushSubscription = {
+    endpoint: string;
+    keys: {
+        p256dh: string;
+        auth: string;
+    };
+};
+
+type SubscriberRecord = {
+    subscription: WebPushSubscription;
+    firstName: string;
+    lastName: string;
+    email: string;
+    createdAt: string;
+    isActive: boolean;
+};
 
 const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
@@ -9,27 +40,56 @@ const redis = new Redis({
 });
 
 webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
+    process.env.VAPID_SUBJECT!,
+    process.env.VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
 );
 
 const MAX_RECORDS = 1000;
 
-function clean(s) {
+function clean(s: any) {
     return (s || "").replace(/\s+/g, " ").trim();
 }
 
-function pageSha(html) {
+function pageSha(html: any) {
     return crypto.createHash("sha256").update(html).digest("hex");
 }
 
-function txId(tx) {
+function txId(tx: any) {
     const raw = `${tx.date}|${tx.player}|${tx.team}|${tx.detail}`;
     return crypto.createHash("sha256").update(raw).digest("hex").slice(0, 24);
 }
 
-async function parseTransactions(html) {
+function getErrorMessage(err: unknown): string {
+    if (err instanceof Error) return err.message;
+    return typeof err === "string" ? err : JSON.stringify(err);
+}
+
+function getErrorStack(err: unknown): string {
+    if (err instanceof Error && err.stack) return err.stack;
+    return "";
+}
+
+function getStatusCode(err: unknown): number | undefined {
+    if (typeof err === "object" && err !== null && "statusCode" in err) {
+        const sc = (err as StatusCodeError).statusCode;
+        return typeof sc === "number" ? sc : undefined;
+    }
+    return undefined;
+}
+
+function isSubscriberRecord(v: unknown): v is SubscriberRecord {
+    return (
+        typeof v === "object" &&
+        v !== null &&
+        "subscription" in v &&
+        typeof (v as any).firstName === "string" &&
+        typeof (v as any).lastName === "string" &&
+        typeof (v as any).email === "string"
+    );
+}
+
+async function parseTransactions(html: any) {
     const $ = cheerio.load(html);
 
     // Target the container whose class includes "@container/module-resolver"
@@ -44,7 +104,7 @@ async function parseTransactions(html) {
     }
 
     const rows = table.find("tbody tr");
-    const out = [];
+    const out: any = [];
 
     rows.each((_, tr) => {
         const cells = $(tr).find("td");
@@ -82,47 +142,58 @@ async function parseTransactions(html) {
     return out;
 }
 
-async function loadSubscribers() {
+async function loadSubscribers(): Promise<SubscriberRecord[]> {
     const subsMap = await redis.hgetall("subs");
 
-    const list = subsMap ? Object.values(subsMap).map((v) => {
-        try {
-            if (v == null) return null;
+    const list: SubscriberRecord[] = (subsMap ? Object.values(subsMap) : [])
+        .map((v): SubscriberRecord | null => {
+            try {
+                if (v == null) return null;
+                if (typeof v === "object") return v as SubscriberRecord;
+                if (typeof v === "string") return JSON.parse(v) as SubscriberRecord;
+                return JSON.parse(String(v)) as SubscriberRecord;
+            } catch {
+                return null;
+            }
+        })
+        .filter(isSubscriberRecord);
 
-            // If Upstash already gave an object, use it
-            if (typeof v === "object") return v;
-
-            // If it's a string, parse it (normal case)
-            if (typeof v === "string") return JSON.parse(v);
-
-            // Fallback: try parsing whatever it is
-            return JSON.parse(String(v));
-        } catch {
-            return null;
-        }
-    }) : [];
-
-    return list.filter((r) => r?.isActive !== false && r?.subscription?.endpoint);
+    return list;
 }
 
-async function sendPushToSubscriber(rec, payloadObj) {
+export async function sendPushToSubscriber(
+    rec: SubscriberRecord,
+    payloadObj: PushPayload
+): Promise<boolean> {
     const sub = rec.subscription;
-    const payload = JSON.stringify(payloadObj);
+
+    // Ensure metadata defaults
+    const payload = JSON.stringify({
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+        data: { url: "/recent" },
+        ...payloadObj,
+    });
 
     try {
         await webpush.sendNotification(sub, payload);
         return true;
-    } catch (err) {
-        const status = err?.statusCode;
-        
+    } catch (err: unknown) {
+        const status = getStatusCode(err);
+
+        // Subscription is gone → clean it up
         if (status === 404 || status === 410) {
+            console.log("Removing dead subscription:", rec.email);
             await redis.hdel("subs", sub.endpoint);
+        } else {
+            console.error("Push send failed:", err);
         }
+
         return false;
     }
 }
 
-export async function handler(event) {
+export async function handler(event: any) {
     try {
         // Optional manual trigger: add ?force=1 to always push
         const force = event?.queryStringParameters?.force === "1";
@@ -151,6 +222,8 @@ export async function handler(event) {
         // Parse table rows
         const txns = await parseTransactions(html);
 
+        let newTransactions = [];
+
         // Insert new ones into Upstash (cap 1000)
         let newCount = 0;
 
@@ -167,12 +240,14 @@ export async function handler(event) {
                 seenAt: new Date().toISOString(),
             };
 
-            await redis.lpush("tx:list", JSON.stringify(record));
+            newTransactions.push(record);
+
+            await redis.lpush("tx:transactions", JSON.stringify(record));
             await redis.sadd("tx:seen", id);
             newCount++;
         }
 
-        await redis.ltrim("tx:list", 0, MAX_RECORDS - 1);
+        await redis.ltrim("tx:transactions", 0, MAX_RECORDS - 1);
 
         // If nothing new, you may still have a changed page (reorder/etc.)
         if (!force && newCount === 0) {
@@ -185,14 +260,18 @@ export async function handler(event) {
 
         for (const rec of subs) {
             const body =
-                newCount > 0
-                    ? `Hey ${rec.firstName}, ${newCount} new transaction(s). Tap to view.`
-                    : `Hey ${rec.firstName}, transactions page changed. Tap to view.`;
+                newCount > 1
+                    ? `REA: ${newCount} new transactions. Tap to view.`
+                    : newCount === 1
+                        ? `${newTransactions[0].player} — ${newTransactions[0].detail}`
+                        : `No new transactions (page changed). Tap to view.`;
 
             const ok = await sendPushToSubscriber(rec, {
-                title: "ECHL Transactions Updated",
+                title: "🏒 REA: Transaction",
                 body,
-                url: "https://echl.com/transactions",
+                data: {
+                    url: "/recent"
+                }
             });
 
             if (ok) sent++;
@@ -202,13 +281,13 @@ export async function handler(event) {
             statusCode: 200,
             body: `Changed=${changed} force=${force} new=${newCount} notified=${sent}`,
         };
-    } catch (e) {
+    } catch (e: unknown) {
         console.error("ECHL CRON ERROR:", e);
 
         return {
             statusCode: 500,
             headers: { "content-type": "text/plain; charset=utf-8" },
-            body: `ERROR: ${e?.message || e}\n\nSTACK:\n${e?.stack || "(no stack)"}`,
+            body: `ERROR: ${getErrorMessage(e)}\n\nSTACK:\n${getErrorStack(e)}`,
         };
     }
 }

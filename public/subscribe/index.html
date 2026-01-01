@@ -186,7 +186,7 @@
           throw new Error(await res.text());
         
         setStatus("Subscribed successfully ✅", "success");
-        setTimeout(() => location.href = "/recent", 600);
+        setTimeout(() => location.href = "/", 600);
       } catch (err) {
         setStatus(
           err

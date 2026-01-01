@@ -173,7 +173,7 @@ export async function sendPushToSubscriber(
     const payload = JSON.stringify({
         icon: "/icon-192.png",
         badge: "/icon-192.png",
-        data: { url: "/recent" },
+        data: { url: "/" },
         ...payloadObj,
     });
 
@@ -272,7 +272,7 @@ export async function handler(event: any) {
                 title: "🏒 REA: Transaction",
                 body,
                 data: {
-                    url: "/recent"
+                    url: "/"
                 }
             });
 

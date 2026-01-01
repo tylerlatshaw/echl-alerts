@@ -1,8 +1,9 @@
 [build]
+  command = "npx @11ty/eleventy"
   publish = "public"
 
 [functions]
-  node_bundler = "esbuild"
+  directory = "netlify/functions"
 
 [functions."echl-cron"]
   schedule = "*/30 * * * *"

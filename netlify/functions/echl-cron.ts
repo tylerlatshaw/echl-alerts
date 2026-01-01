@@ -128,7 +128,9 @@ async function parseTransactions(html: any) {
         const detail = clean($(cells[2]).text());
 
         /* ---------------- Date ---------------- */
-        const date = clean($(cells[3]).text());
+        const date = clean(
+            $(cells[3]).find("span").eq(1).text()
+        );
 
         if (!player || !team || !detail || !date) return;
 

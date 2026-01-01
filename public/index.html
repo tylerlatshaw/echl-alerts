@@ -114,9 +114,10 @@
           <td class="px-4 py-4 font-bold">${tx.player ?? ""}</td>
           <td class="px-4 py-4 text-gray-200">${tx.team ?? ""}</td>
           <td class="px-4 py-4 text-gray-200">${tx.detail ?? ""}</td>
-          <td class="px-4 py-4 text-gray-200 whitespace-nowrap">${new Date(tx.date).toLocaleDateString() ?? ""}</td>
+          <td class="px-4 py-4 text-gray-200 whitespace-nowrap">${new Date(`${tx.date}T00:00:00`).toDateString() ?? ""}</td>
         `;
         tbody.appendChild(tr);
+        console.log(tx.date)
       }
 
       table.hidden = false;

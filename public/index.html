@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <meta name="theme-color" content="#40007f"/>
+
+        <title>Recent Transactions | ECHL</title>
+        <meta name="description" content="Latest ECHL transactions.">
+
+        <link rel="stylesheet" href="/css/base.css">
+
+        <!-- Favicons / PWA -->
+        <link rel="icon" href="/favicon.ico" sizes="any"/>
+        <link rel="apple-touch-icon" href="/icon-192.png"/>
+        <link rel="manifest" href="/manifest.json"/>
+
+        <!-- Tailwind CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+
+    <body class="h-screen w-screen overflow-hidden bg-black text-white">
+        <!-- Fixed Background (attached) -->
+        <div class="fixed inset-0 -z-10 [background:radial-gradient(125%_125%_at_50%_10%,#000_40%,#40007f_100%)]"></div>
+
+        <!-- Sticky Header -->
+        <header class="sticky top-0 z-50 h-24 border-b border-white/20 bg-gray-900/80 p-4 backdrop-blur">
+            <div class="mx-auto flex max-w-5xl items-center justify-between">
+                <div class="flex items-center divide-x-2 divide-white/20">
+                    <a href="https://echl.com/transactions" target="_blank" rel="noreferrer">
+                        <img src="/echl-logo.svg"
+                 class="h-14 w-auto cursor-pointer px-4 drop-shadow-[0_0_8px_rgb(255,255,255,0.3)] hover:drop-shadow-[0_0_8px_rgb(255,255,255,0.5)]"/>
+                    </a>
+                    <a href="https://royalshockey.com/team/roster" target="_blank" rel="noreferrer">
+                        <img src="/reading-royals-logo.svg"
+                 class="h-16 w-auto cursor-pointer px-4 drop-shadow-[0_0_8px_rgb(255,255,255,0.3)] hover:drop-shadow-[0_0_8px_rgb(255,255,255,0.5)]"/>
+                    </a>
+                </div>
+
+                <a href="/" class="text-2xl font-bold hover:text-[#ae9ccb] hidden md:block">
+                    ECHL Transactions
+                </a>
+
+                <nav class="flex gap-4">
+                    <a href="/" class="rounded-xl bg-white/20 px-4 py-2 text-lg font-semibold hover:bg-[#5C3896]">Latest</a>
+                    <a href="/subscribe" class="rounded-xl bg-white/20 px-4 py-2 text-lg font-semibold hover:bg-[#5C3896]">Subscribe</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Scroll Region: MAIN + FOOTER -->
+        <div class="flex h-[calc(100vh-6rem)] flex-col overflow-y-auto">
+            <main class="flex-1">
+                <div class="mx-auto max-w-5xl px-4 py-8 text-center">
+                    
+<div class="mx-auto max-w-5xl p-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">Recent Transactions</h1>
+    <button id="refresh"
+      class="rounded-xl px-3 py-2 text-sm font-semibold bg-[#5C3896] hover:bg-[#4a2d78]">
+      Refresh
+    </button>
+  </div>
+
+  <p id="error" class="mt-2 text-sm text-red-700"></p>
+
+  <div class="mt-8 overflow-hidden rounded-lg">
+    <div class="overflow-x-auto">
+      <table id="table" class="min-w-full rounded-lg bg-gray-800 mb-4" hidden>
+        <thead class="bg-slate-100 text-slate-700">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Player</th>
+            <th class="px-4 py-3 font-semibold">Team</th>
+            <th class="px-4 py-3 font-semibold">Detail</th>
+            <th class="px-4 py-3 font-semibold">Date</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p id="meta" class="mt-2 text-lg text-gray-300">Loading…</p>
+
+</div>
+
+<script>
+
+  async function loadRecent() {
+    const meta = document.getElementById("meta");
+    const errEl = document.getElementById("error");
+    const table = document.getElementById("table");
+    const tbody = document.querySelector("#table tbody");
+
+    errEl.textContent = "";
+    meta.textContent = "Loading…";
+    table.hidden = true;
+
+    try {
+      const res = await fetch("/.netlify/functions/tx-latest?limit=50");
+      if (!res.ok) 
+        throw new Error(await res.text());
+      
+      const json = await res.json();
+      const data = json.data || [];
+
+      meta.textContent = `Showing ${data.length} most recent transactions`;
+      tbody.innerHTML = "";
+
+      for (const tx of data) {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-gray-700";
+        tr.innerHTML = `
+          <td class="px-4 py-4 font-bold">${tx.player ?? ""}</td>
+          <td class="px-4 py-4 text-gray-200">${tx.team ?? ""}</td>
+          <td class="px-4 py-4 text-gray-200">${tx.detail ?? ""}</td>
+          <td class="px-4 py-4 text-gray-200 whitespace-nowrap">${new Date(`${tx.date}T00:00:00`).toDateString() ?? ""}</td>
+        `;
+        tbody.appendChild(tr);
+        console.log(tx.date)
+      }
+
+      table.hidden = false;
+    } catch (e) {
+      meta.textContent = "";
+      errEl.textContent = e
+        ?.message || "Error loading data";
+    }
+  }
+
+  document
+    .getElementById("refresh")
+    .addEventListener("click", loadRecent);
+  loadRecent();
+</script>
+                </div>
+            </main>
+
+            <footer class="w-full p-6 mx-auto max-w-3xl text-center text-xs text-slate-300/80">
+                &copy; 2025 Tyler J. Latshaw.  
+                ECHL, the ECHL logo, team names, and team logos (including the Reading Royals)
+                are trademarks and/or copyrighted works of their respective owners.
+                This fan site is an independent, unofficial project and is not affiliated with,
+                endorsed by, nor sponsored by the ECHL or any ECHL team.
+             </footer>
+        </div>
+    </body>
+</html>

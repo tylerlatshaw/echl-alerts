@@ -10,7 +10,6 @@ type WebPushSubscription = {
 
 type SubscriberRecord = {
     subscription: WebPushSubscription;
-    preferredTeams: string[];
     firstName: string;
     lastName: string;
     email: string;

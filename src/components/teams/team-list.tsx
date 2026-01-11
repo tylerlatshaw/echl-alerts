@@ -14,7 +14,7 @@ export default function TeamList({ leagueData }: Props) {
         <div className="mt-8 overflow-hidden rounded-lg">
             <div className="overflow-x-auto p-4">
 
-                <div className="grid grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     {
                         leagueData.teams.map((team) => {
                             return <Button

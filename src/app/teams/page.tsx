@@ -5,7 +5,7 @@ async function getTeamData() {
 
   const base = process.env.NEXT_PUBLIC_BASE_URL;
 
-  const url = `${base}/api/get-league-data`;
+  const url = `${base}/api/league/get-league-data`;
 
   const res = await fetch(url, {
     cache: "no-store",

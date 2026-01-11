@@ -14,7 +14,8 @@ const eslintConfig = [
   {
     rules: {
       "semi": "error",
-      "quotes": "error"
+      "quotes": "error",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
   {

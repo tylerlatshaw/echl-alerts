@@ -1,4 +1,4 @@
-import { redis } from "../lib/redis";
+// import { redis } from "../lib/redis";
 
 const Page = async () => {
     // const raw = await redis.lrange("tx:transactions", 0, 50);

@@ -7,7 +7,10 @@ const nextConfig: NextConfig = {
       new URL("https://flagsapi.com/**"),
       new URL("https://assets.leaguestat.com/**")
     ],
-  }
+  },
+  eslint: {
+    ignoreDuringBuilds: false, // keep linting ON
+  },
 };
 
 export default nextConfig;

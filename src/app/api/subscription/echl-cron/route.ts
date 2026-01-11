@@ -65,11 +65,8 @@ function isSubscriberRecord(v: unknown): v is SubscriberRecord {
         typeof v === "object" &&
         v !== null &&
         "subscription" in v &&
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         typeof (v as any).firstName === "string" &&
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         typeof (v as any).lastName === "string" &&
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         typeof (v as any).email === "string"
     );
 }
@@ -179,7 +176,6 @@ export async function GET(req: NextRequest) {
 
         const txns = await parseTransactions(html);
         
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const newTransactions: any[] = [];
         let newCount = 0;
 

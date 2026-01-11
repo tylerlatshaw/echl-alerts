@@ -24,7 +24,6 @@ export async function GET() {
                 return null;
             }
         })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .filter(Boolean) as any[];
 
     // Only return safe fields

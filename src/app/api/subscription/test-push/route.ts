@@ -16,6 +16,7 @@ webpush.setVapidDetails(
     process.env.VAPID_PRIVATE_KEY!
 );
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function coerce(v: any) {
     try {
         if (!v) return null;
@@ -32,6 +33,7 @@ export async function GET(req: NextRequest) {
     if (!email) return new NextResponse("Missing email", { status: 400 });
 
     const subsMap = await redis.hgetall("subs");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const records = (subsMap ? Object.values(subsMap) : []).map(coerce).filter(Boolean) as any[];
 
     const rec = records.find((r) => r.email?.toLowerCase() === email);
@@ -48,6 +50,7 @@ export async function GET(req: NextRequest) {
     try {
         const result = await webpush.sendNotification(rec.subscription, payload);
         return NextResponse.json({ ok: true, statusCode: result.statusCode });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
         // This is the key — if delivery fails you WILL see why here.
         return NextResponse.json(

@@ -8,25 +8,27 @@ import { resolveTeamColor } from "../../lib/team-color-map";
 import { Team } from "../../lib/types";
 
 type Props = {
-  params: { team: string };
+  params: Promise<{ team: string }>;
 };
 
 export default function Page({ params }: Props) {
-  const { team } = params;
-
   const [teamData, setTeamData] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!team) {
-      setError("Missing team parameter");
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
 
-    async function load() {
+    async function init() {
       try {
+        const { team } = await params;
+        if (cancelled) return;
+
+        if (!team) {
+          setError("Missing team parameter");
+          return;
+        }
+
         const res = await fetch(
           `/api/league/get-team-data?team=${encodeURIComponent(team)}`,
           { cache: "no-store" }
@@ -35,7 +37,6 @@ export default function Page({ params }: Props) {
         if (!res.ok) throw new Error(await res.text());
 
         const json: { team: Team } = await res.json();
-
         if (!json?.team) throw new Error("Invalid team name");
 
         setTeamData(json.team);
@@ -43,24 +44,24 @@ export default function Page({ params }: Props) {
         console.error("Error loading team:", e);
         setError("Unable to load team data");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    load();
-  }, [team]);
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [params]);
 
-  if (loading) {
-    return <p className="p-6 text-gray-400 text-lg">Loading…</p>;
-  }
+  if (loading) return <p className="p-6 text-gray-400 text-lg">Loading…</p>;
 
-  if (error) {
+  if (error)
     return (
       <div className="p-6 text-red-500 text-lg font-bold">
         {error}
       </div>
     );
-  }
 
   if (!teamData) return null;
 

@@ -1,51 +1,73 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import RosterTable from "../../../components/roster/roster-container";
 import TeamColorSetter from "../../../components/roster/team-color-setter";
 import ViewMoreButton from "../../../components/roster/view-more-button";
 import { resolveTeamColor } from "../../lib/team-color-map";
 import { Team } from "../../lib/types";
 
-async function getTeamData(teamSlug: string) {
-  const params = new URLSearchParams({ team: teamSlug });
+type Props = {
+  params: { team: string };
+};
 
-  const base =
-    process.env.URL ||
-    (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined);
-  console.log("Using INTERNAL_BASE_URL:", base);
+export default function Page({ params }: Props) {
+  const { team } = params;
 
-  if (!base) throw new Error("No base URL available");
+  const [teamData, setTeamData] = useState<Team | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const url = `${base}/api/league/get-team-data?${params.toString()}`;
+  useEffect(() => {
+    if (!team) {
+      setError("Missing team parameter");
+      setLoading(false);
+      return;
+    }
 
-  const res = await fetch(url, {
-    cache: "no-store",
-  });
+    async function load() {
+      try {
+        const res = await fetch(
+          `/api/league/get-team-data?team=${encodeURIComponent(team)}`,
+          { cache: "no-store" }
+        );
 
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
+        if (!res.ok) throw new Error(await res.text());
 
-export default async function Page({ params }: { params: Promise<{ team: string }> }) {
-  const { team } = await params;
+        const json: { team: Team } = await res.json();
 
-  if (!team) {
+        if (!json?.team) throw new Error("Invalid team name");
+
+        setTeamData(json.team);
+      } catch (e) {
+        console.error("Error loading team:", e);
+        setError("Unable to load team data");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [team]);
+
+  if (loading) {
+    return <p className="p-6 text-gray-400 text-lg">Loading…</p>;
+  }
+
+  if (error) {
     return (
       <div className="p-6 text-red-500 text-lg font-bold">
-        Missing team parameter. Try <code>/roster/reading-royals</code>
+        {error}
       </div>
     );
   }
 
-  const data: { team: Team } = await getTeamData(team);
+  if (!teamData) return null;
 
-  if (!data || !data.team)
-    return (
-      <div className="p-6 text-red-500 text-lg font-bold">
-        Invalid team name
-      </div>
-    );
-
-  const teamData = data.team;
-  const teamColor = resolveTeamColor(teamData.slug, teamData.logo?.colors![0] || null);
+  const teamColor = resolveTeamColor(
+    teamData.slug,
+    teamData.logo?.colors?.[0] ?? null
+  );
 
   return (
     <>
@@ -55,10 +77,10 @@ export default async function Page({ params }: { params: Promise<{ team: string 
         name={teamData.name}
         url={teamData.links?.officialWebUrl || "https://royalshockey.com"}
       />
+
       <div className="mx-auto w-full">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">{teamData.name}</h1>
-
           <ViewMoreButton />
         </div>
 

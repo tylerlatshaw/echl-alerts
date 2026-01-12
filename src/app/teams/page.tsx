@@ -4,7 +4,6 @@ import TeamList from "../../components/teams/team-list";
 async function getTeamData() {
 
   const base =
-    process.env.INTERNAL_BASE_URL ||
     process.env.URL ||
     (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined);
 

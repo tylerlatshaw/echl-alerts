@@ -8,10 +8,9 @@ async function getTeamData(teamSlug: string) {
   const params = new URLSearchParams({ team: teamSlug });
 
   const base =
-    process.env.INTERNAL_BASE_URL ||
     process.env.URL ||
     (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined);
-console.log("Using INTERNAL_BASE_URL:", base);
+  console.log("Using INTERNAL_BASE_URL:", base);
 
   if (!base) throw new Error("No base URL available");
 

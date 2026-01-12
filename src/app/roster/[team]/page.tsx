@@ -11,6 +11,7 @@ async function getTeamData(teamSlug: string) {
     process.env.INTERNAL_BASE_URL ||
     process.env.URL ||
     (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined);
+console.log("Using INTERNAL_BASE_URL:", base);
 
   if (!base) throw new Error("No base URL available");
 
@@ -24,9 +25,9 @@ async function getTeamData(teamSlug: string) {
   return res.json();
 }
 
-export default async function Page({ params }: { params: Promise<{ team: string }> }) {
+export default async function Page({ params }: { params: { team: string } }) {
 
-  const { team } = await params;
+  const { team } = params;
 
   if (!team) {
     return (

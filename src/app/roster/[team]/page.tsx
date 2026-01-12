@@ -7,7 +7,11 @@ import { Team } from "../../lib/types";
 async function getTeamData(teamSlug: string) {
   const params = new URLSearchParams({ team: teamSlug });
 
-  const base = process.env.NEXT_PUBLIC_BASE_URL;
+  const base =
+    process.env.INTERNAL_BASE_URL ??
+    (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined);
+
+  if (!base) throw new Error("INTERNAL_BASE_URL is not set");
 
   const url = `${base}/api/league/get-team-data?${params.toString()}`;
 

@@ -3,7 +3,11 @@ import TeamList from "../../components/teams/team-list";
 
 async function getTeamData() {
 
-  const base = process.env.NEXT_PUBLIC_BASE_URL;
+  const base =
+    process.env.INTERNAL_BASE_URL ??
+    (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined);
+
+  if (!base) throw new Error("INTERNAL_BASE_URL is not set");
 
   const url = `${base}/api/league/get-league-data`;
 

@@ -25,45 +25,46 @@ export default function RosterTable({ teamData, teamColor }: Props) {
     const [loading, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
+        let cancelled = false;
+
         async function getData() {
             setLoading(true);
             try {
                 const teamId = teamData.id;
-                const season = teamData.activeSeason?.slug || dayjs().format("YYYY") + "-" + dayjs().add(1, "year").format("YYYY");
+                const season =
+                    teamData.activeSeason?.slug ??
+                    `${dayjs().format("YYYY")}-${dayjs().add(1, "year").format("YYYY")}`;
 
-                const res = await fetch("/api/league/get-roster?team=" + encodeURIComponent(teamId) + "&season=" + season, {
-                    cache: "no-store"
-                });
+                const res = await fetch(
+                    `/api/league/get-roster?team=${encodeURIComponent(teamId)}&season=${season}`,
+                    { cache: "no-store" }
+                );
 
-                if (!res.ok) {
-                    throw new Error(await res.text());
-                }
+                if (!res.ok) throw new Error(await res.text());
 
                 const json = await res.json();
 
-                const unsortedData = json.data.tableData.edges.filter((p: RosterEdge) => p.jerseyNumber != null);
+                const sortedData = json.data.tableData.edges
+                    .filter((p: RosterEdge) => p.jerseyNumber != null)
+                    .sort((a: RosterEdge, b: RosterEdge) => {
+                        const aRank = positionRank[a.player.position ?? "Z"] ?? 99;
+                        const bRank = positionRank[b.player.position ?? "Z"] ?? 99;
+                        if (aRank !== bRank) return aRank - bRank;
+                        return (a.jerseyNumber ?? 999) - (b.jerseyNumber ?? 999);
+                    });
 
-                const sortedData = unsortedData.sort((a: RosterEdge, b: RosterEdge) => {
-                    const aRank = positionRank[a.player.position ?? "Z"] ?? 99;
-                    const bRank = positionRank[b.player.position ?? "Z"] ?? 99;
-
-                    if (aRank !== bRank) {
-                        return aRank - bRank;
-                    }
-
-                    // same position > sort by jersey number
-                    return (a.jerseyNumber ?? 999) - (b.jerseyNumber ?? 999);
-                });
-
-                setPlayers(sortedData);
+                if (!cancelled) setPlayers(sortedData);
             } catch (e) {
-                console.log("Error getting players: ", e);
+                console.error("Error getting players:", e);
+            } finally {
+                if (!cancelled) setLoading(false);
             }
-
-            setLoading(false);
         }
 
         getData();
+        return () => {
+            cancelled = true;
+        };
     }, [teamData.id, teamData.activeSeason?.slug]);
 
     if (loading) return <p className="mt-2 text-lg text-gray-300">Loading…</p>;

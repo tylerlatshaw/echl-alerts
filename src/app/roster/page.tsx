@@ -2,16 +2,31 @@ import DefaultThemeSetter from "../../components/global-components/default-theme
 import TeamList from "../../components/teams/team-list";
 
 async function getTeamData() {
+  const base =
+    process.env.INTERNAL_BASE_URL ??
+    (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined);
 
-  const base = process.env.NEXT_PUBLIC_BASE_URL;
+  if (!base) throw new Error("INTERNAL_BASE_URL is not set");
 
   const url = `${base}/api/league/get-league-data`;
 
-  const res = await fetch(url, {
-    cache: "no-store",
-  });
+  const res = await fetch(url, { cache: "no-store" });
 
-  if (!res.ok) throw new Error(await res.text());
+  const contentType = res.headers.get("content-type") ?? "";
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`get-league-data failed (${res.status}): ${text.slice(0, 300)}`);
+  }
+
+  // Guard against Cloudflare / HTML responses
+  if (!contentType.includes("application/json")) {
+    const text = await res.text();
+    throw new Error(
+      `Expected JSON but got ${contentType}. Body starts: ${text.slice(0, 200)}`
+    );
+  }
+
   return res.json();
 }
 

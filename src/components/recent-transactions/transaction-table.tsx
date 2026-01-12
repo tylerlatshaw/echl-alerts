@@ -12,24 +12,31 @@ export default function TransactionTable() {
     const recordLimit = 25;
 
     useEffect(() => {
+        const controller = new AbortController();
+
         async function getData() {
             setLoading(true);
             try {
-                const res = await fetch(`/api/league/tx-latest?limit=${recordLimit}`);
-                if (!res.ok) {
-                    throw new Error(await res.text());
-                }
+                const res = await fetch(
+                    `/api/league/tx-latest?limit=${recordLimit}`,
+                    { signal: controller.signal }
+                );
+
+                if (!res.ok) throw new Error(await res.text());
+
                 const json = await res.json();
-                console.table(json.data);
                 setTransactions(json.data);
             } catch (e) {
-                console.log("Error getting transactions: ", e);
+                if ((e as Error).name !== "AbortError") {
+                    console.error("Error getting transactions:", e);
+                }
+            } finally {
+                setLoading(false);
             }
-
-            setLoading(false);
         }
 
         getData();
+        return () => controller.abort();
     }, []);
 
     if (loading)
@@ -37,6 +44,10 @@ export default function TransactionTable() {
 
     return (
         <>
+            {!loading && transactions.length === 0 && (
+                <p className="mt-4 text-gray-400">No recent transactions found.</p>
+            )}
+
             <p id="error" className="mt-2 text-red-700"></p>
 
             <div className="mt-8 overflow-hidden rounded-lg">

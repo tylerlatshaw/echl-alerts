@@ -3,7 +3,6 @@ import Footer from "../components/global-components/footer";
 import Header from "../components/global-components/header";
 import "./globals.css";
 import { TeamThemeProvider } from "./providers/team-theme-provider";
-// import { RegisterServiceWorker } from "@/components/global-components/register-service-worker";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -19,8 +18,11 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
-
 
 export default function RootLayout({
   children,
@@ -48,7 +50,6 @@ export default function RootLayout({
             </main>
             <Footer />
           </div>
-          {/* <RegisterServiceWorker /> */}
         </TeamThemeProvider>
       </body>
     </html>

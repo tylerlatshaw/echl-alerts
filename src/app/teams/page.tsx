@@ -6,7 +6,8 @@ import TeamList from "../../components/teams/team-list";
 import { League, Team } from "../lib/types";
 
 type LeagueData = {
-  leagueData: { league: League; teams: Team[]; };
+  league: League,
+  teams: Team[]
 };
 
 export default function Page() {
@@ -66,7 +67,7 @@ export default function Page() {
       <div className="mx-auto w-full">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">
-            {data?.leagueData.league.fullName || "ECHL"} Teams
+            {data?.league?.fullName || "ECHL"} Teams
           </h1>
         </div>
 
@@ -78,7 +79,7 @@ export default function Page() {
           </div>
         )}
 
-        {!loading && !error && data && <TeamList leagueData={data.leagueData} />}
+        {!loading && !error && data && <TeamList leagueData={data} />}
 
         {!loading && !error && !data && (
           <p className="mt-4 text-gray-400">No league data returned.</p>

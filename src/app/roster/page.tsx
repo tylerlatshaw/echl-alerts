@@ -1,48 +1,86 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import DefaultThemeSetter from "../../components/global-components/default-theme-setter";
 import TeamList from "../../components/teams/team-list";
 
-async function getTeamData() {
-  const base =
-    process.env.URL ||
-    (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined);
+export default function Page() {
+  const [data, setData] = useState(null); //TODO <type> this later
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!base) throw new Error("No base URL available");
+  useEffect(() => {
+    let cancelled = false;
 
-  const url = `${base}/api/league/get-league-data`;
+    async function getTeamData() {
+      setLoading(true);
+      setError(null);
 
-  const res = await fetch(url, { cache: "no-store" });
+      try {
+        const res = await fetch("/api/league/get-league-data", {
+          cache: "no-store",
+        });
 
-  const contentType = res.headers.get("content-type") ?? "";
+        const contentType = res.headers.get("content-type") ?? "";
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`get-league-data failed (${res.status}): ${text.slice(0, 300)}`);
-  }
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(
+            `get-league-data failed (${res.status}): ${text.slice(0, 300)}`
+          );
+        }
 
-  // Guard against Cloudflare / HTML responses
-  if (!contentType.includes("application/json")) {
-    const text = await res.text();
-    throw new Error(
-      `Expected JSON but got ${contentType}. Body starts: ${text.slice(0, 200)}`
-    );
-  }
+        // Guard against HTML (Cloudflare "Just a moment..." etc.)
+        if (!contentType.includes("application/json")) {
+          const text = await res.text();
+          throw new Error(
+            `Expected JSON but got ${contentType}. Body starts: ${text.slice(0, 200)}`
+          );
+        }
 
-  return res.json();
-}
+        const json = await res.json();
 
-export default async function Page() {
-  const data = await getTeamData();
+        if (!cancelled) setData(json);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("Error getting league data:", e);
+        if (!cancelled) setError(msg);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    getTeamData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <>
       <DefaultThemeSetter />
+
       <div className="mx-auto w-full">
         <div className="flex items-center justify-between">
           <span className="text-semibold font-semibold border border-red-300 bg-red-900/60 text-red-300 px-4 py-2 rounded-[4px]">
             You are missing a team selection. Please select a team from the list below.
           </span>
         </div>
-        <TeamList leagueData={data} />
+
+        {loading && <p className="mt-4 text-gray-400">Loading…</p>}
+
+        {error && (
+          <div className="mt-4 rounded-md border border-red-500/40 bg-red-950/40 p-4 text-red-300">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && data && <TeamList leagueData={data} />}
+
+        {!loading && !error && !data && (
+          <p className="mt-4 text-gray-400">No league data returned.</p>
+        )}
       </div>
     </>
   );

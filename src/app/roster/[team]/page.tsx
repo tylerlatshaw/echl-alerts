@@ -24,9 +24,8 @@ async function getTeamData(teamSlug: string) {
   return res.json();
 }
 
-export default async function Page({ params }: { params: { team: string } }) {
-
-  const { team } = params;
+export default async function Page({ params }: { params: Promise<{ team: string }> }) {
+  const { team } = await params;
 
   if (!team) {
     return (

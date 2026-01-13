@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
             return a.name.localeCompare(b.name);
         });
 
-        return NextResponse.json({ league: echl[0].league, teams: teamsSorted }, { status: 200 });
+        return NextResponse.json({ data: { league: echl[0].league, teams: teamsSorted } }, { status: 200 });
 
     } catch (e: unknown) {
         console.error("ERROR:", e);

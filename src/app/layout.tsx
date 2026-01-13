@@ -42,7 +42,7 @@ export default function RootLayout({
           {/* Scroll Region: MAIN + FOOTER */}
           <div className="flex h-[calc(100vh-6rem)] flex-col overflow-y-auto">
             <main className="flex-1">
-              <div className="mx-auto w-full lg:max-w-7xl py-8 text-center">
+              <div className="mx-auto w-full lg:max-w-7xl px-4 lg:px-0 py-8 text-center">
 
                 {children}
 

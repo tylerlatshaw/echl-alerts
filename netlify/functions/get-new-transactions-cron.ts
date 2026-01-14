@@ -20,26 +20,14 @@ export const handler: Handler = async () => {
         });
 
         const text = await res.text();
-
-        if (!res.ok) {
-            console.error("Upstream failed:", res.status, text);
-            return {
-                statusCode: 500,
-                body: JSON.stringify({
-                    ok: false,
-                    status: res.status,
-                    response: text,
-                }),
-            };
-        }
+        console.log(text);
 
         return {
-            statusCode: 200,
-            body: JSON.stringify({
-                ok: true,
-                triggered: true,
-                response: JSON.parse(text),
-            }),
+            statusCode: res.status,
+            headers: {
+                "content-type": "application/json",
+            },
+            body: text,
         };
     } catch (err: any) {
         console.error("Cron error:", err);
@@ -48,7 +36,7 @@ export const handler: Handler = async () => {
             statusCode: 500,
             body: JSON.stringify({
                 ok: false,
-                error: err?.message ?? String(err),
+                error: String(err?.message ?? err),
             }),
         };
     }

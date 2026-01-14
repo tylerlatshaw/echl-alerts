@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
         const newTransactions: Transaction[] = [];
 
         for (const tx of txns) {
-            if (tx.team !== "Savannah Ghost Pirates") continue;
+            if (tx.team !== "Reading Royals") continue;
 
             const id = txId(tx);
             if (existingIds.has(id)) continue;

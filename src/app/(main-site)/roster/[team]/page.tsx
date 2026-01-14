@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import RosterTable from "../../../components/roster/roster-container";
-import TeamColorSetter from "../../../components/roster/team-color-setter";
-import ViewMoreButton from "../../../components/roster/view-more-button";
-import { resolveTeamColor } from "../../lib/team-color-map";
-import type { Team } from "../../lib/types";
+import RosterTable from "./../../../../components/roster/roster-container";
+import TeamColorSetter from "./../../../../components/roster/team-color-setter";
+import ViewMoreButton from "./../../../../components/roster/view-more-button";
+import { resolveTeamColor } from "./../../../lib/team-color-map";
+import type { Team } from "./../../../lib/types";
 
 type Props = {
   params: Promise<{ team: string }>;

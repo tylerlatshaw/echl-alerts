@@ -1,9 +1,52 @@
+/**
+ * @swagger
+ * /api/league/get-team-data:
+ *   get:
+ *     summary: Get team data
+ *     tags:
+ *       - League
+ *     operationId: getTeamData
+ *     parameters:
+ *       - in: query
+ *         name: team
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Team slug (e.g. reading-royals)
+ *     responses:
+ *       200:
+ *         description: Team data returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 team:
+ *                   $ref: '#/components/schemas/Team'
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { LeagueResponse } from "../../../lib/types";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(req: NextRequest) {
     try {
+        const { searchParams } = new URL(req.url);
+
+        const team = searchParams.get("team");
+
+        if (!team) {
+            return NextResponse.json(
+                { error: "Missing team" },
+                { status: 400 }
+            );
+        }
+
         const query = {
             "operationName": "LeagueRosters",
             "variables": {
@@ -91,11 +134,9 @@ export async function GET(req: NextRequest) {
             return l.league.slug === "echl";
         });
 
-        const teamsSorted = echl[0].teams.sort((a, b) => {
-            return a.name.localeCompare(b.name);
-        });
+        const filteredTeam = echl[0].teams.find((t) => t.slug === team);
 
-        return NextResponse.json({ data: { league: echl[0].league, teams: teamsSorted } }, { status: 200 });
+        return NextResponse.json({ team: filteredTeam }, { status: 200 });
 
     } catch (e: unknown) {
         console.error("ERROR:", e);

@@ -1,3 +1,57 @@
+/**
+ * @swagger
+ * /api/league/get-roster:
+ *   get:
+ *     summary: Get team roster
+ *     tags:
+ *       - League
+ *     operationId: getRoster
+ *     parameters:
+ *       - in: query
+ *         name: team
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Team identifier
+ *       - in: query
+ *         name: season
+ *         required: false
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Roster data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     tableData:
+ *                       type: object
+ *                       properties:
+ *                         edges:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               player:
+ *                                 $ref: '#/components/schemas/Player'
+ *                               jerseyNumber:
+ *                                 type: integer
+ *                                 nullable: true
+ *                     footerData:
+ *                       type: object
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { RosterResponse } from "../../../lib/types";
 

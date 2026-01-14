@@ -1,3 +1,59 @@
+/**
+ * @swagger
+ * /api/subscription/push-subscribe:
+ *   post:
+ *     summary: Create or update a push notification subscription
+ *     tags:
+ *       - Subscription
+ *     operationId: pushSubscribe
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [subscription, firstName, lastName, email]
+ *             properties:
+ *               subscription:
+ *                 type: object
+ *                 required: [endpoint, keys]
+ *                 properties:
+ *                   endpoint:
+ *                     type: string
+ *                   keys:
+ *                     type: object
+ *                     required: [p256dh, auth]
+ *                     properties:
+ *                       p256dh:
+ *                         type: string
+ *                       auth:
+ *                         type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Subscription stored
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [ok]
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 

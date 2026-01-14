@@ -1,5 +1,5 @@
-import DefaultThemeSetter from "../../components/global-components/default-theme-setter";
-import TeamList from "../../components/teams/team-list";
+import DefaultThemeSetter from "./../../../components/global-components/default-theme-setter";
+import TeamList from "./../../../components/teams/team-list";
 
 export default function Page() {
   return (

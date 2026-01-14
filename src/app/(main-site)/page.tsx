@@ -1,5 +1,5 @@
-import DefaultThemeSetter from "../components/global-components/default-theme-setter";
-import TransactionTable from "../components/recent-transactions/transaction-table";
+import DefaultThemeSetter from "./../../components/global-components/default-theme-setter";
+import TransactionTable from "./../../components/recent-transactions/transaction-table";
 
 export default function Page() {
   return (

@@ -1,3 +1,35 @@
+/**
+ * @swagger
+ * /api/subscription/config:
+ *   get:
+ *     summary: Get push notification configuration
+ *     tags:
+ *       - Subscription
+ *     operationId: getSubscriptionConfig
+ *     responses:
+ *       200:
+ *         description: VAPID public key returned
+ *         headers:
+ *           cache-control:
+ *             schema:
+ *               type: string
+ *             description: Always `no-store`
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [vapidPublicKey]
+ *               properties:
+ *                 vapidPublicKey:
+ *                   type: string
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ */
+
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";

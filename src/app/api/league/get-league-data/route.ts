@@ -1,19 +1,44 @@
+/**
+ * @swagger
+ * /api/league/get-league-data:
+ *   get:
+ *     summary: Get ECHL league info and teams
+ *     tags:
+ *       - League
+ *     operationId: getLeagueData
+ *     responses:
+ *       200:
+ *         description: League and teams returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [data]
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   required: [league, teams]
+ *                   properties:
+ *                     league:
+ *                       $ref: '#/components/schemas/League'
+ *                     teams:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Team'
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { LeagueResponse } from "../../../lib/types";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(req: NextRequest) {
     try {
-        const { searchParams } = new URL(req.url);
-
-        const team = searchParams.get("team");
-
-        if (!team) {
-            return NextResponse.json(
-                { error: "Missing team" },
-                { status: 400 }
-            );
-        }
-
         const query = {
             "operationName": "LeagueRosters",
             "variables": {
@@ -101,9 +126,11 @@ export async function GET(req: NextRequest) {
             return l.league.slug === "echl";
         });
 
-        const filteredTeam = echl[0].teams.find((t) => t.slug === team);
+        const teamsSorted = echl[0].teams.sort((a, b) => {
+            return a.name.localeCompare(b.name);
+        });
 
-        return NextResponse.json({ team: filteredTeam }, { status: 200 });
+        return NextResponse.json({ data: { league: echl[0].league, teams: teamsSorted } }, { status: 200 });
 
     } catch (e: unknown) {
         console.error("ERROR:", e);

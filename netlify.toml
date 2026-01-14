@@ -1,12 +1,10 @@
 [build]
   command = "npm run build"
   publish = ".next"
+  functions = "netlify/functions"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[functions]
-  directory = "netlify/functions"
-
-[functions."echl-cron"]
-  schedule = "*/30 * * * *"
+[functions."get-new-transactions-cron"]
+  schedule = "*/15 * * * *"

@@ -1,3 +1,42 @@
+/**
+ * @swagger
+ * /api/subscription/test-push:
+ *   get:
+ *     summary: Send a test web push notification to a subscriber
+ *     tags:
+ *       - Subscription
+ *     operationId: testPush
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: Subscriber email to target (case-insensitive).
+ *     responses:
+ *       200:
+ *         description: Push sent successfully (request accepted by push service)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [ok, statusCode]
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 statusCode:
+ *                   type: number
+ *                   description: HTTP status code returned by the push service.
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { Redis } from "@upstash/redis";

@@ -1,5 +1,5 @@
-import DefaultThemeSetter from "../../components/global-components/default-theme-setter";
-import SubscribeForm from "../../components/subscribe/subscribe-form";
+import DefaultThemeSetter from "./../../../components/global-components/default-theme-setter";
+import SubscribeForm from "./../../../components/subscribe/subscribe-form";
 
 export default async function Page() {
     return (

@@ -7,6 +7,13 @@ export type LeagueResponse = {
     }
 };
 
+export type LeagueData = {
+    data: {
+        league: League,
+        teams: Team[]
+    }
+};
+
 export type League = {
     slug: string,
     commonName: string | null,

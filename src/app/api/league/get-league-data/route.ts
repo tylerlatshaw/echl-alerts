@@ -1,3 +1,38 @@
+/**
+ * @swagger
+ * /api/league/get-league-data:
+ *   get:
+ *     summary: Get ECHL league info and teams
+ *     tags:
+ *       - League
+ *     operationId: getLeagueData
+ *     responses:
+ *       200:
+ *         description: League and teams returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [data]
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   required: [league, teams]
+ *                   properties:
+ *                     league:
+ *                       $ref: '#/components/schemas/League'
+ *                     teams:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Team'
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { LeagueResponse } from "../../../lib/types";
 
@@ -95,7 +130,7 @@ export async function GET(req: NextRequest) {
             return a.name.localeCompare(b.name);
         });
 
-        return NextResponse.json({ league: echl[0].league, teams: teamsSorted }, { status: 200 });
+        return NextResponse.json({ data: { league: echl[0].league, teams: teamsSorted } }, { status: 200 });
 
     } catch (e: unknown) {
         console.error("ERROR:", e);

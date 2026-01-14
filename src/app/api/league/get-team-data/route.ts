@@ -1,3 +1,36 @@
+/**
+ * @swagger
+ * /api/league/get-team-data:
+ *   get:
+ *     summary: Get team data
+ *     tags:
+ *       - League
+ *     operationId: getTeamData
+ *     parameters:
+ *       - in: query
+ *         name: team
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Team slug (e.g. reading-royals)
+ *     responses:
+ *       200:
+ *         description: Team data returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 team:
+ *                   $ref: '#/components/schemas/Team'
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { LeagueResponse } from "../../../lib/types";
 

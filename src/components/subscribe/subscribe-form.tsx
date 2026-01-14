@@ -36,7 +36,7 @@ export default function SubscribeForm() {
 
     if (!vapidKey) {
         return <>
-            <div className="mt-8 bg-gray-800 p-8 rounded-[8px] max-w-xl mx-auto w-full">
+            <div className="mt-8 bg-gray-800 p-8 rounded-lg max-w-xl mx-auto w-full">
                 <p>Loading…</p>
             </div>
         </>;
@@ -105,7 +105,7 @@ export default function SubscribeForm() {
     }
 
     return <>
-        <div className="mt-8 bg-gray-800 p-8 rounded-[8px] max-w-xl mx-auto w-full">
+        <div className="mt-8 bg-gray-800 p-8 rounded-lg max-w-xl mx-auto w-full">
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 text-left">
 
                 <div className="flex flex-col gap-4">

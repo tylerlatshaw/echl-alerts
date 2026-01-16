@@ -152,15 +152,28 @@ export type Transaction = {
 };
 
 export type TransactionRow = {
-  id: string;
-  team: string;
-  player: string;
-  detail: string;
-  date: string;
+    id: string;
+    team: string;
+    player: string;
+    detail: string;
+    date: string;
 };
 
 export type Subscription = {
     firstName: string,
     lastName: string,
     email: string,
+};
+
+export type WebPushSubscription = {
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+};
+
+export type SubscribeBody = {
+    subscription: WebPushSubscription;
+    firstName: string;
+    lastName: string;
+    email: string;
+    isActive: boolean;
 };

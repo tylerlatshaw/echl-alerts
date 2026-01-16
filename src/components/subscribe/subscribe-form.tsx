@@ -19,6 +19,7 @@ export default function SubscribeForm() {
 
     const [formState, setFormState] = useState<FormStates>("idle");
     const [vapidKey, setVapidKey] = useState<string | null>(null);
+    const [response, setResponse] = useState<string>();
 
     useEffect(() => {
         async function loadConfig() {
@@ -44,6 +45,7 @@ export default function SubscribeForm() {
 
     const onSubmit: SubmitHandler<Subscription> = async (formData) => {
         setFormState("loading");
+
         try {
             const firstName = String(formData.firstName || "").trim();
             const lastName = String(formData.lastName || "").trim();
@@ -53,21 +55,35 @@ export default function SubscribeForm() {
                 throw new Error("Missing required fields");
             }
 
+            if (!("serviceWorker" in navigator)) {
+                throw new Error("Service workers not supported in this browser");
+            }
+
             const permission = await Notification.requestPermission();
             if (permission !== "granted") {
                 throw new Error("Notifications permission denied");
             }
 
-            const registration =
+            // Register (or reuse) service worker
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const reg =
                 (await navigator.serviceWorker.getRegistration()) ??
                 (await navigator.serviceWorker.register("/sw.js"));
 
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(vapidKey),
-            });
+            // Ensure it's active
+            const ready = await navigator.serviceWorker.ready;
 
-            const res = await fetch("/api/push-subscribe", {
+            // Reuse subscription if already exists (prevents duplicates)
+            let subscription = await ready.pushManager.getSubscription();
+
+            if (!subscription) {
+                subscription = await ready.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapidKey),
+                });
+            }
+
+            const res = await fetch("/api/subscription/push-subscribe", {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
@@ -79,14 +95,23 @@ export default function SubscribeForm() {
             });
 
             if (!res.ok) {
+                setResponse("Something went wrong. Please try again later.");
+                setFormState("error");
                 throw new Error(await res.text());
             }
 
+            const data = await res.json();
+
+            if (!data.added) {
+                setResponse("You already subscribed to notifications.");
+            } else if (data.added) {
+                setResponse("You have subscribed to transaction alerts!");
+            }
+
             setFormState("success");
-        } catch (e: unknown) {
+        } catch (e) {
+            console.error("subscribe error:", e);
             setFormState("error");
-            console.error("ERROR:", e);
-            throw new Error("An error occurred subscribing to alerts");
         }
     };
 
@@ -176,11 +201,11 @@ export default function SubscribeForm() {
                     <div className="grow">
                         {
                             formState === "error" &&
-                            <span className="text-red-600">An error has occurred. Please try again later.</span>
+                            <span className="text-red-600">{response}</span>
                         }
                         {
                             formState === "success" &&
-                            <span className="text-green-600">You have subscribed to transaction alerts!</span>
+                            <span className="text-green-600">{response}</span>
                         }
                     </div>
 

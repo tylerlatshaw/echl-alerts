@@ -4,6 +4,7 @@ import Header from "./../../components/global-components/header";
 import "./globals.css";
 import { TeamThemeProvider } from "./.././providers/team-theme-provider";
 import { Metadata } from "next";
+import { RegisterServiceWorker } from "@/components/global-components/register-service-worker";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://echl.tylerlatshaw.com"),
@@ -57,6 +58,8 @@ export default function RootLayout({
       <body className="h-screen w-screen overflow-hidden bg-black text-white">
 
         <TeamThemeProvider defaultColor="#8349ff">
+
+          <RegisterServiceWorker />
 
           <AppBackground />
 

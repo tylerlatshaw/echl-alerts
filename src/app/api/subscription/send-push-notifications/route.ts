@@ -56,29 +56,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as webpush from "web-push";
 import { redis } from "@/app/lib/redis";
-import type { Transaction } from "@/app/lib/types";
+import type { Transaction, SubscribeBody } from "@/app/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type StatusCodeError = { statusCode?: number };
 
-type WebPushSubscription = {
-    endpoint: string;
-    keys: {
-        p256dh: string;
-        auth: string;
-    };
-};
-
-type SubscriberRecord = {
-    subscription: WebPushSubscription;
-    firstName: string;
-    lastName: string;
-    email: string;
-    createdAt: string;
-    isActive: boolean;
-};
+const SUB_LIST_KEY = "push:subs";
+const DEAD_SET_KEY = "push:subs:dead";
 
 webpush.setVapidDetails(
     process.env.VAPID_SUBJECT!,
@@ -89,23 +75,14 @@ webpush.setVapidDetails(
 export async function POST(req: NextRequest) {
     try {
         const apiKey = req.headers.get("x-api-key");
-
         if (apiKey !== process.env.INTERNAL_API_KEY) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
-        const secret = req.headers.get("x-internal-secret");
-        if (secret !== process.env.INTERNAL_PUSH_SECRET) {
-            return new NextResponse("Unauthorized", { status: 401 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const { searchParams } = new URL(req.url);
         const sendPush = searchParams.get("sendPush") === "1";
 
-        const body = await req.json();
+        const body = await req.json().catch(() => null);
         const transactions: Transaction[] = body?.transactions ?? [];
 
         if (!Array.isArray(transactions)) {
@@ -122,8 +99,7 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        const subs = await loadSubscribers();
-        let sent = 0;
+        const subs = await loadSubscribersFromList();
 
         const count = transactions.length;
         const bodyText =
@@ -131,7 +107,12 @@ export async function POST(req: NextRequest) {
                 ? `${count} new transactions. Tap to view.`
                 : `${transactions[0].player} — ${transactions[0].detail}`;
 
+        let sent = 0;
+
         for (const rec of subs) {
+            // Skip inactive or known-dead endpoints
+            if (!rec.isActive) continue;
+
             const ok = await sendPushToSubscriber(rec, {
                 title: "🏒 REA: Transaction",
                 body: bodyText,
@@ -141,10 +122,7 @@ export async function POST(req: NextRequest) {
             if (ok) sent++;
         }
 
-        return NextResponse.json({
-            ok: true,
-            pushSent: sent,
-        });
+        return NextResponse.json({ ok: true, pushSent: sent });
     } catch (err) {
         console.error("PUSH ROUTE ERROR:", err);
         return new NextResponse("Internal error", { status: 500 });
@@ -152,34 +130,37 @@ export async function POST(req: NextRequest) {
 }
 
 /* ---------------------------------------
-    Helper functions
+   Helpers
 ---------------------------------------- */
 
-async function loadSubscribers(): Promise<SubscriberRecord[]> {
-    const subsMap = await redis.hgetall("subs");
+async function loadSubscribersFromList(): Promise<SubscribeBody[]> {
+    const raw = await redis.lrange(SUB_LIST_KEY, 0, -1);
+    const deadEndpoints = new Set<string>(
+        (await redis.smembers(DEAD_SET_KEY).catch(() => [])) ?? []
+    );
 
-    return (subsMap ? Object.values(subsMap) : [])
+    return (raw ?? [])
         .map((v) => {
             try {
-                return typeof v === "string" ? JSON.parse(v) : v;
+                if (v == null) return null;
+                if (typeof v === "string") return JSON.parse(v) as SubscribeBody;
+                if (typeof v === "object") return v as SubscribeBody;
+                return JSON.parse(String(v)) as SubscribeBody;
             } catch {
                 return null;
             }
         })
-        .filter(Boolean) as SubscriberRecord[];
+        .filter((x): x is SubscribeBody => !!x && !!x.subscription?.endpoint)
+        .filter((x) => !deadEndpoints.has(x.subscription.endpoint));
 }
 
 async function sendPushToSubscriber(
-    rec: SubscriberRecord,
-    payloadObj: {
-        title: string;
-        body: string;
-        data?: { url?: string };
-    }
+    rec: SubscribeBody,
+    payloadObj: { title: string; body: string; data?: { url?: string } }
 ): Promise<boolean> {
     const payload = JSON.stringify({
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
+        icon: "/icon-192x192.png",
+        badge: "/icon-192x192.png",
         data: { url: "/" },
         ...payloadObj,
     });
@@ -191,10 +172,13 @@ async function sendPushToSubscriber(
         const status = getStatusCode(err);
 
         if (status === 404 || status === 410) {
-            await redis.hdel("subs", rec.subscription.endpoint);
+            // Mark as dead so we skip it next time
+            const endpoint = rec.subscription.endpoint;
+            await redis.sadd(DEAD_SET_KEY, endpoint);
         } else {
             console.error("Push failed:", err);
         }
+
         return false;
     }
 }
@@ -203,4 +187,5 @@ function getStatusCode(err: unknown): number | undefined {
     if (typeof err === "object" && err && "statusCode" in err) {
         return (err as StatusCodeError).statusCode;
     }
+    return undefined;
 }

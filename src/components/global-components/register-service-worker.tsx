@@ -5,15 +5,7 @@ import { useEffect } from "react";
 export function RegisterServiceWorker() {
     useEffect(() => {
         if (!("serviceWorker" in navigator)) return;
-
-        navigator.serviceWorker
-            .register("/sw.js")
-            .then((reg) => {
-                console.log("SW registered:", reg);
-            })
-            .catch((err) => {
-                console.error("SW registration failed:", err);
-            });
+        navigator.serviceWorker.register("/sw.js").catch(console.error);
     }, []);
 
     return null;

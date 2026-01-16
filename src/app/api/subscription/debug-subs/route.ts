@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 
 export const runtime = "nodejs";
@@ -9,7 +9,16 @@ const redis = new Redis({
     token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+    const apiKey = req.headers.get("x-api-key");
+
+    if (apiKey !== process.env.INTERNAL_API_KEY) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    }
+
     const subsMap = await redis.hgetall("subs");
     const values = subsMap ? Object.values(subsMap) : [];
 

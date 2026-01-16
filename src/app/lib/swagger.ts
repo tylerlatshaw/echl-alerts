@@ -14,6 +14,15 @@ const options: swaggerJSDoc.Options = {
         {
             name: "Subscription",
         }],
+        components: {
+            securitySchemes: {
+                ApiKeyAuth: {
+                    type: "apiKey",
+                    in: "header",
+                    name: "x-api-key",
+                },
+            },
+        },
         servers: [
             {
                 url: process.env.NODE_ENV === "development"

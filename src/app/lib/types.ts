@@ -75,7 +75,7 @@ export type Team = {
     eliteprospectsUrlPath: string,
 }
 
-export type RosterResponse = {
+export type Roster = {
     data: {
         tableData: {
             edges: {
@@ -143,12 +143,20 @@ export type Player = {
 export type Position = "G" | "D" | "F";
 
 export type Transaction = {
-    id: string,
+    id?: string,
     player: string,
     team: string,
     detail: string,
     date: string,
     seenAt: string
+};
+
+export type TransactionRow = {
+  id: string;
+  team: string;
+  player: string;
+  detail: string;
+  date: string;
 };
 
 export type Subscription = {

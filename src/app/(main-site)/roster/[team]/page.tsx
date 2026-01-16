@@ -1,109 +1,66 @@
-"use client";
+import RosterTable from "@/components/roster/roster-container";
+import TeamColorSetter from "@/components/roster/team-color-setter";
+import ViewMoreButton from "@/components/roster/view-more-button";
+import { resolveTeamColor } from "@/app/lib/team-color-map";
+import type { Team } from "@/app/lib/types";
+import { getTeamData } from "@/app/lib/league/get-team-data";
+import type { Metadata } from "next";
 
-import { useEffect, useState } from "react";
-import RosterTable from "./../../../../components/roster/roster-container";
-import TeamColorSetter from "./../../../../components/roster/team-color-setter";
-import ViewMoreButton from "./../../../../components/roster/view-more-button";
-import { resolveTeamColor } from "./../../../lib/team-color-map";
-import type { Team } from "./../../../lib/types";
+export async function generateMetadata(
+  { params }: Props
+): Promise<Metadata> {
+  const { team } = await params;
+
+  const teamData = await getTeamData(team);
+
+  if (!teamData) {
+    return {
+      title: "Roster",
+      description: "ECHL team roster.",
+    };
+  }
+
+  const title = `${teamData.name} Roster`;
+  const description = `Current ${teamData.name} roster, player stats, and team information.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [
+        {
+          url: teamData.logo?.large || "/og-default.png",
+          width: 1200,
+          height: 630,
+          alt: teamData.name,
+        },
+      ],
+    },
+    twitter: {
+      title,
+      description,
+      images: [teamData.logo?.large || "/og-default.png"],
+    },
+  };
+}
 
 type Props = {
   params: Promise<{ team: string }>;
 };
 
-export default function Page({ params }: Props) {
-  const [teamSlug, setTeamSlug] = useState<string | null>(null);
-  const [teamData, setTeamData] = useState<Team | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function Page({ params }: Props) {
+  const { team: teamSlug } = await params;
 
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const { team } = await params;
-        if (cancelled) return;
-
-        if (!team) {
-          setError("Missing team parameter");
-          setLoading(false);
-          return;
-        }
-
-        setTeamSlug(team);
-      } catch (e) {
-        console.error("Error resolving params:", e);
-        setError("Unable to resolve route params");
-        setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [params]);
-
-  useEffect(() => {
-    if (!teamSlug) return;
-
-    const controller = new AbortController();
-
-    (async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const res = await fetch(
-          `/api/league/get-team-data?team=${encodeURIComponent(teamSlug)}`,
-          { cache: "no-store", signal: controller.signal }
-        );
-
-        const contentType = res.headers.get("content-type") ?? "";
-
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`HTTP ${res.status}: ${text.slice(0, 300)}`);
-        }
-
-        // Guard against Cloudflare/HTML responses
-        if (!contentType.includes("application/json")) {
-          const text = await res.text();
-          throw new Error(
-            `Expected JSON but got ${contentType}. Body starts: ${text.slice(0, 200)}`
-          );
-        }
-
-        const json: { team?: Team } = await res.json();
-        if (!json.team) throw new Error("Invalid team name");
-
-        setTeamData(json.team);
-      } catch (e) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
-
-        const msg = e instanceof Error ? e.message : "Unable to load team data";
-        console.error("Error loading team:", e);
-        setError(msg);
-      } finally {
-        setLoading(false);
-      }
-    })();
-
-    return () => controller.abort();
-  }, [teamSlug]);
-
-  if (loading) return <p className="p-6 text-gray-400 text-lg">Loading…</p>;
-
-  if (error) {
-    return (
-      <div className="p-6 text-red-500 text-lg font-bold">
-        {error}
-      </div>
-    );
+  if (!teamSlug) {
+    return <div className="p-6 text-red-500 text-lg font-bold">Missing team parameter</div>;
   }
 
+  const teamData: Team | null = await getTeamData(teamSlug);
+
   if (!teamData) {
-    return <p className="p-6 text-gray-400">No team data returned.</p>;
+    return <div className="p-6 text-red-500 text-lg font-bold">Invalid team name</div>;
   }
 
   const teamColor = resolveTeamColor(

@@ -5,6 +5,8 @@
  *     summary: Send a test web push notification to a subscriber
  *     tags:
  *       - Subscription
+ *     security:
+ *       - ApiKeyAuth: []
  *     operationId: testPush
  *     parameters:
  *       - in: query
@@ -67,6 +69,15 @@ function coerce(v: any) {
 }
 
 export async function GET(req: NextRequest) {
+    const apiKey = req.headers.get("x-api-key");
+
+    if (apiKey !== process.env.INTERNAL_API_KEY) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    }
+
     const email = new URL(req.url).searchParams.get("email")?.toLowerCase();
     if (!email) return new NextResponse("Missing email", { status: 400 });
 
@@ -88,7 +99,6 @@ export async function GET(req: NextRequest) {
         const result = await webpush.sendNotification(rec.subscription, payload);
         return NextResponse.json({ ok: true, statusCode: result.statusCode });
     } catch (err: any) {
-        // This is the key — if delivery fails you WILL see why here.
         return NextResponse.json(
             { ok: false, message: String(err?.message ?? err), statusCode: err?.statusCode, body: err?.body },
             { status: 500 }

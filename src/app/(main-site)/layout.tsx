@@ -6,21 +6,44 @@ import { TeamThemeProvider } from "./.././providers/team-theme-provider";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Next PWA",
-  description: "Minimal Next.js v15 PWA (next-pwa)",
-  manifest: "/manifest.webmanifest",
-  applicationName: "Next PWA",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Next PWA",
+  metadataBase: new URL("https://echl.tylerlatshaw.com"),
+  title: {
+    default: "ECHL Alerts",
+    template: "%s | ECHL Alerts",
   },
-  formatDetection: {
-    telephone: false,
+  description:
+    "Real-time ECHL transactions, rosters, and team updates. Never miss a move.",
+  applicationName: "ECHL Alerts",
+  openGraph: {
+    type: "website",
+    siteName: "ECHL Alerts",
+    title: "ECHL Alerts",
+    description:
+      "Real-time ECHL transactions, rosters, and team updates. Never miss a move.",
+    url: "https://echl.tylerlatshaw.com",
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "ECHL Alerts",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ECHL Alerts",
+    description:
+      "Real-time ECHL transactions, rosters, and team updates.",
+    images: ["/og-default.png"],
   },
   robots: {
     index: false,
     follow: false,
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
 };
 

@@ -1,84 +1,41 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { DataTable } from "./data-table";
 import dayjs from "dayjs";
-import { makeColumns, RosterRow } from "./columns";
-import { RosterResponse, Team } from "../../app/lib/types";
+import type { Team, Roster } from "@/app/lib/types";
+import { getRoster } from "@/app/lib/league/get-roster";
+import RosterTableClient from "./roster-table-client";
 
-type RosterEdge = RosterResponse["data"]["tableData"]["edges"][number];
+type RosterEdge = Roster["data"]["tableData"]["edges"][number];
 
 type Props = {
     teamData: Team;
     teamColor: string;
 };
 
-const positionRank: Record<string, number> = {
-    F: 0,
-    D: 1,
-    G: 2,
-};
+const positionRank: Record<string, number> = { F: 0, D: 1, G: 2 };
 
-export default function RosterTable({ teamData, teamColor }: Props) {
+export default async function RosterTable({ teamData, teamColor }: Props) {
+    const season =
+        teamData.activeSeason?.slug ??
+        `${dayjs().format("YYYY")}-${dayjs().add(1, "year").format("YYYY")}`;
 
-    const [players, setPlayers] = useState<RosterEdge[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    let edges: RosterEdge[] = [];
 
-    useEffect(() => {
-        let cancelled = false;
+    try {
+        const roster = await getRoster(teamData.id, season);
 
-        async function getData() {
-            setLoading(true);
-            try {
-                const teamId = teamData.id;
-                const season =
-                    teamData.activeSeason?.slug ??
-                    `${dayjs().format("YYYY")}-${dayjs().add(1, "year").format("YYYY")}`;
+        edges =
+            (roster.data.tableData.edges ?? [])
+                .filter((p: RosterEdge) => p.jerseyNumber != null)
+                .slice()
+                .sort((a: RosterEdge, b: RosterEdge) => {
+                    const aRank = positionRank[a.player.position ?? "Z"] ?? 99;
+                    const bRank = positionRank[b.player.position ?? "Z"] ?? 99;
+                    if (aRank !== bRank) return aRank - bRank;
+                    return (a.jerseyNumber ?? 999) - (b.jerseyNumber ?? 999);
+                }) ?? [];
+    } catch (e) {
+        console.error("Error getting roster:", e);
+        edges = [];
+    }
 
-                const res = await fetch(
-                    `/api/league/get-roster?team=${encodeURIComponent(teamId)}&season=${season}`,
-                    { cache: "no-store" }
-                );
-
-                if (!res.ok) throw new Error(await res.text());
-
-                const json = await res.json();
-
-                const sortedData = json.data.tableData.edges
-                    .filter((p: RosterEdge) => p.jerseyNumber != null)
-                    .sort((a: RosterEdge, b: RosterEdge) => {
-                        const aRank = positionRank[a.player.position ?? "Z"] ?? 99;
-                        const bRank = positionRank[b.player.position ?? "Z"] ?? 99;
-                        if (aRank !== bRank) return aRank - bRank;
-                        return (a.jerseyNumber ?? 999) - (b.jerseyNumber ?? 999);
-                    });
-
-                if (!cancelled) setPlayers(sortedData);
-            } catch (e) {
-                console.error("Error getting players:", e);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        }
-
-        getData();
-        return () => {
-            cancelled = true;
-        };
-    }, [teamData.id, teamData.activeSeason?.slug]);
-
-    if (loading) return <p className="mt-2 text-lg text-gray-300">Loading…</p>;
-
-    return (
-        <>
-            <div className="mt-8 overflow-hidden rounded-lg">
-                <div className="overflow-x-auto">
-                    <DataTable<RosterRow, unknown>
-                        columns={makeColumns(teamColor)}
-                        data={players}
-                    />
-                </div>
-            </div>
-        </>
-    );
+    return <RosterTableClient players={edges} teamColor={teamColor} />;
 }

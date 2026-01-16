@@ -1,3 +1,96 @@
+/**
+ * @swagger
+ * /api/league/get-new-transactions:
+ *   get:
+ *     summary: Scrape ECHL transactions, persist new ones, and optionally trigger push notifications
+ *     tags:
+ *       - League
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: force
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: ["1"]
+ *         description: Force processing even if the page hash has not changed.
+ *       - in: query
+ *         name: sendPush
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: ["1"]
+ *         description: If set to "1", triggers the internal push notification endpoint when new transactions are found.
+ *     responses:
+ *       200:
+ *         description: Success (may still indicate no changes or no new rows).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Present when nothing actionable happened (e.g., no changes / no new rows).
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     changed:
+ *                       type: boolean
+ *                       description: Whether the stored hash differs from the current table hash.
+ *                     forceUsed:
+ *                       type: boolean
+ *                       description: Whether force=1 was used.
+ *                     sendPushUsed:
+ *                       type: boolean
+ *                       description: Whether sendPush=1 was used.
+ *                     newTransactions:
+ *                       type: integer
+ *                       description: Count of new transactions found and persisted.
+ *                     pushNotificationsSent:
+ *                       type: integer
+ *                       description: Count of push notifications successfully sent.
+ *                 data:
+ *                   type: array
+ *                   description: Newly detected transactions (empty when none found).
+ *                   items:
+ *                     $ref: "#/components/schemas/Transaction"
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ *
+ * components:
+ *   schemas:
+ *     Transaction:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: Deterministic hash ID for the transaction.
+ *         player:
+ *           type: string
+ *         team:
+ *           type: string
+ *         detail:
+ *           type: string
+ *         date:
+ *           type: string
+ *         seenAt:
+ *           type: string
+ *           format: date-time
+ *       required:
+ *         - id
+ *         - player
+ *         - team
+ *         - detail
+ *         - date
+ *         - seenAt
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import * as cheerio from "cheerio";
@@ -8,6 +101,15 @@ const MAX_RECORDS = 1000;
 
 export async function GET(req: NextRequest) {
     try {
+        const apiKey = req.headers.get("x-api-key");
+
+        if (apiKey !== process.env.INTERNAL_API_KEY) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
         const { searchParams } = new URL(req.url);
         const force = searchParams.get("force") === "1";
         const sendPush = searchParams.get("sendPush") === "1";
@@ -110,6 +212,7 @@ export async function GET(req: NextRequest) {
                     headers: {
                         "content-type": "application/json",
                         "x-internal-secret": process.env.INTERNAL_PUSH_SECRET!,
+                        "x-api-key": process.env.INTERNAL_API_KEY!,
                     },
                     body: JSON.stringify({
                         transactions: newTransactions,
@@ -156,7 +259,17 @@ export async function GET(req: NextRequest) {
 ---------------------------------------- */
 
 function pageSha(html: string) {
-    return crypto.createHash("sha256").update(html).digest("hex");
+    const $ = cheerio.load(html);
+
+    const container = $("div[class*='@container/module-resolver']").first();
+    if (!container.length) throw new Error("Transaction container not found");
+
+    const table = container.find("table").first();
+    if (!table.length) throw new Error("Transaction table not found");
+
+    const tableHtml = table.html();
+
+    return crypto.createHash("sha256").update(tableHtml!).digest("hex");
 }
 
 async function parseTransactions(html: string) {

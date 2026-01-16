@@ -1,7 +1,11 @@
+import { getTeams } from "@/app/lib/league/get-teams";
 import DefaultThemeSetter from "./../../../components/global-components/default-theme-setter";
 import TeamList from "./../../../components/teams/team-list";
 
-export default function Page() {
+export default async function Page() {
+
+  const leagueData = await getTeams();
+
   return (
     <>
       <DefaultThemeSetter />
@@ -12,7 +16,8 @@ export default function Page() {
             You are missing a team selection. Please select a team from the list below.
           </span>
         </div>
-        <TeamList />
+
+        <TeamList leagueData={leagueData} />
       </div>
     </>
   );

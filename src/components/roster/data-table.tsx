@@ -37,7 +37,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
 
     return (
-        <div>
+        <div className="text-white">
             <Table>
                 <TableHeader>
                     {table.getHeaderGroups().map((hg) => (

@@ -152,7 +152,6 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// Optional: fail fast for other methods
 export async function GET() {
     return new NextResponse("Method not allowed", { status: 405 });
 }

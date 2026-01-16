@@ -1,3 +1,58 @@
+/**
+ * @swagger
+ * /api/subscription/send-push-notifications:
+ *   post:
+ *     summary: Send push notifications to all active subscribers for new transactions
+ *     tags:
+ *       - Subscription
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: sendPush
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: ["1"]
+ *         description: When "1", pushes are sent. Otherwise the route returns ok=true with pushSent=0.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - transactions
+ *             properties:
+ *               transactions:
+ *                 type: array
+ *                 items:
+ *                   $ref: "#/components/schemas/Transaction"
+ *     responses:
+ *       200:
+ *         description: Push attempt completed (successfully or skipped).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - ok
+ *                 - pushSent
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 pushSent:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Unable to complete request
+ *       500:
+ *         description: Server error
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import * as webpush from "web-push";
 import { redis } from "@/app/lib/redis";
@@ -33,6 +88,15 @@ webpush.setVapidDetails(
 
 export async function POST(req: NextRequest) {
     try {
+        const apiKey = req.headers.get("x-api-key");
+
+        if (apiKey !== process.env.INTERNAL_API_KEY) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
         const secret = req.headers.get("x-internal-secret");
         if (secret !== process.env.INTERNAL_PUSH_SECRET) {
             return new NextResponse("Unauthorized", { status: 401 });

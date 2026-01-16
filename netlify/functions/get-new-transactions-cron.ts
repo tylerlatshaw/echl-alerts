@@ -16,6 +16,7 @@ export const handler: Handler = async () => {
             method: "GET",
             headers: {
                 "user-agent": "netlify-cron/1.0",
+                "x-api-key": process.env.INTERNAL_API_KEY!,
             },
         });
 

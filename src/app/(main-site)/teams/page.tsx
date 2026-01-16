@@ -1,7 +1,18 @@
+import { getTeams } from "./../../lib/league/get-teams";
 import DefaultThemeSetter from "./../../../components/global-components/default-theme-setter";
 import TeamList from "./../../../components/teams/team-list";
+import { Metadata } from "next";
 
-export default function Page() {
+export const metadata: Metadata = {
+  title: "Teams",
+  description:
+    "Browse all ECHL teams, arenas, and links in one place.",
+};
+
+export default async function Page() {
+
+  const leagueData = await getTeams();
+
   return (
     <>
       <DefaultThemeSetter />
@@ -12,7 +23,7 @@ export default function Page() {
           </h1>
         </div>
 
-        <TeamList />
+        <TeamList leagueData={leagueData} />
       </div>
     </>
   );

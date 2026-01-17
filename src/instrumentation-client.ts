@@ -15,7 +15,7 @@ Sentry.init({
   sendDefaultPii: true,
 
   release: process.env.NEXT_PUBLIC_SENTRY_RELEASE || "local",
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || "https://2045591fc964cca08d7d95604d9b35dd@o4506043986280448.ingest.us.sentry.io/4510727009468416",
   environment: process.env.NODE_ENV || "local",
 });
 

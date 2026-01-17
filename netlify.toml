@@ -1,6 +1,7 @@
 [build]
   command = """
-  export SENTRY_RELEASE="${BRANCH}-$(date +%F)-${COMMIT_REF:0:7}" &&
+  SHORT_SHA="$(printf "%s" "$COMMIT_REF" | cut -c1-7)" &&
+  export SENTRY_RELEASE="${BRANCH}-$(date +%F)-${SHORT_SHA}" &&
   export NEXT_PUBLIC_SENTRY_RELEASE="$SENTRY_RELEASE" &&
 
   npm run build &&
@@ -15,6 +16,7 @@
     echo "Skipping Sentry Release (NETLIFY=${NETLIFY:-unset}, CONTEXT=${CONTEXT:-unset})"
   fi
   """
+  publish = ".next"
   functions = "netlify/functions"
 
 [[plugins]]

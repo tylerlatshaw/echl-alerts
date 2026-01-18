@@ -1,15 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-
 /**
  * @swagger
- * /sentry-test:
+ * /api/debug/sentry-test:
  *   get:
  *     summary: Trigger a controlled Sentry error (production smoke test)
- *     description: >
- *       Diagnostic endpoint to verify Sentry production reporting and sourcemap resolution.
- *       Requires a valid API key and `trigger=1`.
  *     tags:
- *       - Diagnostics
+ *       - Debug
  *     security:
  *       - ApiKeyAuth: []
  *     parameters:
@@ -28,6 +23,9 @@ import { NextRequest, NextResponse } from "next/server";
  *       500:
  *         description: Intentional error thrown to validate Sentry.
  */
+
+import { NextRequest, NextResponse } from "next/server";
+
 export async function GET(req: NextRequest) {
     const apiKey = req.headers.get("x-api-key");
 

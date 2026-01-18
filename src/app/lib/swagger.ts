@@ -13,6 +13,9 @@ const options: swaggerJSDoc.Options = {
         },
         {
             name: "Subscription",
+        },
+        {
+            name: "Debug",
         }],
         components: {
             securitySchemes: {
